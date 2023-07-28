@@ -1,0 +1,7 @@
+mode: set
+dev01/task.go:11.50,13.16 2 1
+dev01/task.go:13.16,15.3 1 1
+dev01/task.go:16.2,16.22 1 1
+dev01/task.go:19.13,23.16 3 0
+dev01/task.go:23.16,26.3 2 0
+dev01/task.go:28.2,31.60 3 0
