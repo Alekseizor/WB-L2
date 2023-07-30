@@ -1,4 +1,4 @@
-package main
+package dev01
 
 import (
 	"testing"
