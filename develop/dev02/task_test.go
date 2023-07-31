@@ -21,7 +21,7 @@ func TestUnpackString(t *testing.T) {
 	for numCase, testCase := range testCases {
 		_, err := UnpackString(testCase.row)
 		if err != testCase.err {
-			t.Errorf("[%d] returned error - %v - different from expected - %v", numCase, err, nil)
+			t.Errorf("[%d] returned error - %v - different from expected - %v", numCase, err, testCase.err)
 		}
 	}
 }
