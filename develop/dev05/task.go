@@ -30,31 +30,22 @@ func main() {
 
 	// Получаем аргументы командной строки (паттерн и файлы)
 	pattern := flag.Arg(0)
-	log.Println(pattern)
 	file := flag.Args()[1]
 
-	// Создаем регулярное выражение на основе паттерна
-	var re *regexp.Regexp
-	if *fixed {
-		re = regexp.MustCompile(regexp.QuoteMeta(pattern))
-	} else {
-		if *ignoreCase {
-			re = regexp.MustCompile(`(?i)` + pattern)
-		} else {
-			re = regexp.MustCompile(pattern)
-		}
-	}
 	lines, err := readFile(file)
 	if err != nil {
 		log.Fatalf("File reading error %s: %s", file, err)
 	}
-	err = processFile(lines, re, *after, *before, *context, *count, *invert, *lineNum)
+	counter, err := processFile(lines, pattern, *after, *before, *context, *ignoreCase, *fixed, *count, *invert, *lineNum)
 	if err != nil {
 		log.Fatalf("Error processing file %s: %s", file, err)
 	}
+	if *count {
+		fmt.Println(counter)
+	}
 }
 
-func readFile(file string) ([]RowFlag, error) {
+func readFile(file string) ([]*RowFlag, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -62,12 +53,12 @@ func readFile(file string) ([]RowFlag, error) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	var lines []RowFlag // Строки для печати
+	var lines []*RowFlag // Строки для печати
 
 	// Проходим по каждой строке файла
 	for scanner.Scan() {
 		line := scanner.Text()
-		lines = append(lines, RowFlag{row: line})
+		lines = append(lines, &RowFlag{row: line})
 	}
 	if err = scanner.Err(); err != nil {
 		return nil, err
@@ -76,75 +67,76 @@ func readFile(file string) ([]RowFlag, error) {
 }
 
 // Обрабатывает файл с учетом заданных параметров
-func processFile(lines []RowFlag, re *regexp.Regexp, after, before, context int, count, invert, lineNum bool) error {
-	// Проходим по каждой строке файла
+func processFile(lines []*RowFlag, pattern string, after, before, context int, ignoreCase, fixed, count, invert, lineNum bool) (int, error) {
+	// Создаем регулярное выражение на основе паттерна
+	var re *regexp.Regexp
+	switch {
+	case fixed:
+		re = regexp.MustCompile(regexp.QuoteMeta(pattern))
+	case ignoreCase:
+		re = regexp.MustCompile(`(?i)` + pattern)
+	default:
+		re = regexp.MustCompile(pattern)
+	}
+	var startIndex, stopIndex int
+	var counter int
 	for numLine, line := range lines {
 		// Проверяем на соответствие паттерну
 		match := re.MatchString(line.row)
-
-		// Определяем, должна ли эта строка быть напечатана
-		printLine := false
-
-		if ((!invert && match) || (invert && !match)) && !line.output {
-			printLine = true
+		//если строка не должна быть выведена, то сразу переходим к следующей
+		if (match && invert) || (!match && !invert) {
+			continue
 		}
-		if context > 0 {
-			if len(lines) > context {
-				lines = lines[1:]
-			}
-			lines = append(lines, line)
-			if printLine {
-				printLines(lines, lineNum)
-				lines = []string{}
-			}
-		} else if before > 0 {
-			if len(lines) == before {
-				printLines(lines, lineNum)
-				lines = []string{}
-			}
-			if printLine {
-				lines = []string{}
-			}
-			lines = append(lines, line)
-		} else if after > 0 {
-			if printLine {
-				lines = append(lines, line)
-				printLines(lines, lineNum)
-				lines = []string{}
-			} else if len(lines) > 0 {
-				lines = append(lines, line)
-			}
-		} else if count {
-			if printLine {
-				lines = append(lines, line)
-			}
-		} else {
-			if printLine {
-				fmt.Println(line)
-			}
+		if count {
+			counter++
+			continue
 		}
+		switch {
+		case context > 0:
+			if context >= numLine {
+				startIndex = 0
+			} else {
+				startIndex = numLine - context
+			}
+			if numLine+context >= len(lines)-1 {
+				stopIndex = len(lines) - 1
+			} else {
+				stopIndex = numLine + context
+			}
+		case before > 0:
+			if before >= numLine {
+				startIndex = 0
+			} else {
+				startIndex = numLine - before
+			}
+			stopIndex = numLine
+		case after > 0:
+			if numLine+after >= len(lines)-1 {
+				stopIndex = len(lines) - 1
+			} else {
+				stopIndex = numLine + after
+			}
+			startIndex = numLine
+		default:
+			startIndex = numLine
+			stopIndex = numLine
+		}
+		printLines(lines[startIndex:stopIndex+1], lineNum)
 	}
-
-	// Проверяем наличие ошибок в процессе сканирования файла
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Если нужно вывести количество совпадений
-	if count {
-		fmt.Printf("Count: %d\n", len(lines))
-	}
-
-	return nil
+	return counter, nil
 }
 
 // Печатает строки с номерами (если необходимо)
-func printLines(lines []string, lineNum bool) {
+func printLines(lines []*RowFlag, lineNum bool) {
 	for i, line := range lines {
+		if line.output {
+			continue
+		}
+		line.output = true
 		if lineNum {
-			fmt.Printf("%d: %s\n", i+1, line)
+			fmt.Printf("%d: %s\n", i+1, line.row)
 		} else {
-			fmt.Println(line)
+			fmt.Println(line.row)
 		}
 	}
 }
