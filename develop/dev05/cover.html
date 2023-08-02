@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>dev05: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">dev05/task.go (71.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "bufio"
+        "flag"
+        "fmt"
+        "log"
+        "os"
+        "regexp"
+)
+
+type RowFlag struct {
+        row    string
+        output bool
+}
+
+func main() <span class="cov0" title="0">{
+        // Объявляем флаги
+        after := flag.Int("A", 0, "Print N lines after the match")
+        before := flag.Int("B", 0, "Print N lines before the match")
+        context := flag.Int("C", 0, "Print N lines around the match")
+        count := flag.Bool("c", false, "Print only the count of matching lines") //выводим только количество, для нас важны только флаги
+        ignoreCase := flag.Bool("i", false, "Ignore case")
+        invert := flag.Bool("v", false, "Invert the match")
+        fixed := flag.Bool("F", false, "Fixed string match")
+        lineNum := flag.Bool("n", false, "Print line numbers")
+
+        // Парсим флаги командной строки
+        flag.Parse()
+
+        // Получаем аргументы командной строки (паттерн и файлы)
+        pattern := flag.Arg(0)
+        file := flag.Args()[1]
+
+        lines, err := readFile(file)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("File reading error %s: %s", file, err)
+        }</span>
+        <span class="cov0" title="0">counter, err := processFile(lines, pattern, *after, *before, *context, *ignoreCase, *fixed, *count, *invert, *lineNum)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Error processing file %s: %s", file, err)
+        }</span>
+        <span class="cov0" title="0">if *count </span><span class="cov0" title="0">{
+                fmt.Println(counter)
+        }</span>
+}
+
+func readFile(file string) ([]*RowFlag, error) <span class="cov8" title="1">{
+        f, err := os.Open(file)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer f.Close()
+
+        scanner := bufio.NewScanner(f)
+        var lines []*RowFlag // Строки для печати
+
+        // Проходим по каждой строке файла
+        for scanner.Scan() </span><span class="cov8" title="1">{
+                line := scanner.Text()
+                lines = append(lines, &amp;RowFlag{row: line})
+        }</span>
+        <span class="cov8" title="1">if err = scanner.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return lines, nil</span>
+}
+
+// Обрабатывает файл с учетом заданных параметров
+func processFile(lines []*RowFlag, pattern string, after, before, context int, ignoreCase, fixed, count, invert, lineNum bool) (int, error) <span class="cov8" title="1">{
+        // Создаем регулярное выражение на основе паттерна
+        var re *regexp.Regexp
+        switch </span>{
+        case fixed:<span class="cov8" title="1">
+                re = regexp.MustCompile(regexp.QuoteMeta(pattern))</span>
+        case ignoreCase:<span class="cov8" title="1">
+                re = regexp.MustCompile(`(?i)` + pattern)</span>
+        default:<span class="cov8" title="1">
+                re = regexp.MustCompile(pattern)</span>
+        }
+        <span class="cov8" title="1">var startIndex, stopIndex int
+        var counter int
+        for numLine, line := range lines </span><span class="cov8" title="1">{
+                // Проверяем на соответствие паттерну
+                match := re.MatchString(line.row)
+                //если строка не должна быть выведена, то сразу переходим к следующей
+                if (match &amp;&amp; invert) || (!match &amp;&amp; !invert) </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if count </span><span class="cov8" title="1">{
+                        counter++
+                        continue</span>
+                }
+                <span class="cov8" title="1">switch </span>{
+                case context &gt; 0:<span class="cov8" title="1">
+                        if context &gt;= numLine </span><span class="cov8" title="1">{
+                                startIndex = 0
+                        }</span> else<span class="cov8" title="1"> {
+                                startIndex = numLine - context
+                        }</span>
+                        <span class="cov8" title="1">if numLine+context &gt;= len(lines)-1 </span><span class="cov8" title="1">{
+                                stopIndex = len(lines) - 1
+                        }</span> else<span class="cov8" title="1"> {
+                                stopIndex = numLine + context
+                        }</span>
+                case before &gt; 0:<span class="cov8" title="1">
+                        if before &gt;= numLine </span><span class="cov8" title="1">{
+                                startIndex = 0
+                        }</span> else<span class="cov8" title="1"> {
+                                startIndex = numLine - before
+                        }</span>
+                        <span class="cov8" title="1">stopIndex = numLine</span>
+                case after &gt; 0:<span class="cov8" title="1">
+                        if numLine+after &gt;= len(lines)-1 </span><span class="cov8" title="1">{
+                                stopIndex = len(lines) - 1
+                        }</span> else<span class="cov8" title="1"> {
+                                stopIndex = numLine + after
+                        }</span>
+                        <span class="cov8" title="1">startIndex = numLine</span>
+                default:<span class="cov8" title="1">
+                        startIndex = numLine
+                        stopIndex = numLine</span>
+                }
+                <span class="cov8" title="1">printLines(lines[startIndex:stopIndex+1], lineNum)</span>
+        }
+        <span class="cov8" title="1">return counter, nil</span>
+}
+
+// Печатает строки с номерами (если необходимо)
+func printLines(lines []*RowFlag, lineNum bool) <span class="cov8" title="1">{
+        for i, line := range lines </span><span class="cov8" title="1">{
+                if line.output </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">line.output = true
+                if lineNum </span><span class="cov8" title="1">{
+                        fmt.Printf("%d: %s\n", i+1, line.row)
+                }</span> else<span class="cov8" title="1"> {
+                        fmt.Println(line.row)
+                }</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

@@ -1,0 +1,12 @@
+mode: set
+dev04/task.go:9.60,12.30 3 1
+dev04/task.go:12.30,14.24 1 1
+dev04/task.go:14.24,15.12 1 1
+dev04/task.go:17.3,23.66 4 1
+dev04/task.go:26.2,28.42 2 1
+dev04/task.go:28.42,29.27 1 1
+dev04/task.go:29.27,33.4 3 1
+dev04/task.go:36.2,36.16 1 1
+dev04/task.go:39.34,43.2 3 1
+dev04/task.go:45.13,49.39 3 0
+dev04/task.go:49.39,51.3 1 0
